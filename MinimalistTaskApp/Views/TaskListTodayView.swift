@@ -3,18 +3,17 @@ import SwiftData
 
 struct TaskListTodayView: View {
     @Environment(\.modelContext) private var context
-    @Query private var plannedTasks: [Task]
+    // ⬇️  plus aucun filtre sur l’enum dans le #Predicate
+    @Query(sort: [SortDescriptor(\Task.dueDate, order: .forward)])
+    private var allTasks: [Task]
+
     @State private var showingNew = false
 
-    init() {
-        _plannedTasks = Query(filter: #Predicate<Task> { task in
-            task.category == TaskCategory.planned && task.dueDate != nil
-        }, sort: [SortDescriptor(\Task.dueDate, order: .forward)])
-    }
-
+    /// Tâches .planned dont la date est « aujourd’hui »
     private var todayTasks: [Task] {
-        plannedTasks.filter { task in
-            guard let date = task.dueDate else { return false }
+        allTasks.filter { task in
+            guard task.category == .planned,           // filtrage en mémoire
+                  let date = task.dueDate else { return false }
             return Calendar.current.isDateInToday(date)
         }
     }
@@ -42,8 +41,6 @@ struct TaskListTodayView: View {
     }
 
     private func delete(at offsets: IndexSet) {
-        for index in offsets {
-            context.delete(todayTasks[index])
-        }
+        for index in offsets { context.delete(todayTasks[index]) }
     }
 }

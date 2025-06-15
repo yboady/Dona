@@ -3,31 +3,33 @@ import SwiftData
 
 struct TaskListPlanView: View {
     @Environment(\.modelContext) private var context
-    @Query private var plannedTasks: [Task]
+    // Pas de filtre sur l’enum : on récupère juste les tâches datées
+    @Query(filter: #Predicate<Task> { task in
+        task.dueDate != nil            // évite les nil dans le groupement
+    },
+    sort: [SortDescriptor(\Task.dueDate, order: .forward)])
+    private var datedTasks: [Task]
+
     @State private var showingNew = false
 
-    init() {
-        _plannedTasks = Query(filter: #Predicate<Task> { task in
-            task.category == TaskCategory.planned && task.dueDate != nil
-        }, sort: [SortDescriptor(\Task.dueDate, order: .forward)])
-    }
-
-    private var futureTasks: [Task] {
-        let tomorrow = Calendar.current.date(byAdding: .day, value: 1,
-                                             to: Calendar.current.startOfDay(for: Date()))!
-        return plannedTasks.filter { task in
-            guard let date = task.dueDate else { return false }
-            return date >= tomorrow
+    /// Tâches .planned datées strictement après aujourd’hui
+    private var futurePlanned: [Task] {
+        let tomorrow = Calendar.current.date(
+            byAdding: .day,
+            value: 1,
+            to: Calendar.current.startOfDay(for: Date())
+        )!
+        return datedTasks.filter { task in
+            task.category == .planned && (task.dueDate ?? Date()) >= tomorrow
         }
     }
 
+    /// Regroupe par jour pour afficher des sections
     private var grouped: [(date: Date, tasks: [Task])] {
-        let dictionary = Dictionary(grouping: futureTasks) { task in
+        let dict = Dictionary(grouping: futurePlanned) { task in
             Calendar.current.startOfDay(for: task.dueDate ?? Date())
         }
-        return dictionary.keys.sorted().map { key in
-            (key, dictionary[key] ?? [])
-        }
+        return dict.keys.sorted().map { (date: $0, tasks: dict[$0] ?? []) }
     }
 
     var body: some View {
@@ -38,8 +40,8 @@ struct TaskListPlanView: View {
                         ForEach(group.tasks) { task in
                             TaskRowView(task: task)
                         }
-                        .onDelete { indexSet in
-                            delete(indexSet, in: group.tasks)
+                        .onDelete { offsets in
+                            delete(offsets, in: group.tasks)
                         }
                     }
                 }
@@ -59,8 +61,6 @@ struct TaskListPlanView: View {
     }
 
     private func delete(_ offsets: IndexSet, in tasks: [Task]) {
-        for index in offsets {
-            context.delete(tasks[index])
-        }
+        for index in offsets { context.delete(tasks[index]) }
     }
 }

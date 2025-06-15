@@ -3,19 +3,22 @@ import SwiftData
 
 struct TaskListInboxView: View {
     @Environment(\.modelContext) private var context
-    @Query private var tasks: [Task]
+
+    // ⬇️ on récupère toutes les tâches, sans filtre côté Swift Data
+    @Query(sort: [SortDescriptor(\Task.createdAt, order: .reverse)])
+    private var allTasks: [Task]
+
     @State private var showingNew = false
 
-    init() {
-        _tasks = Query(filter: #Predicate<Task> { task in
-            task.category == TaskCategory.inbox
-        }, sort: [SortDescriptor(\Task.createdAt, order: .reverse)])
+    /// Filtrage en mémoire : seulement les tâches .inbox
+    private var inboxTasks: [Task] {
+        allTasks.filter { $0.category == .inbox }
     }
 
     var body: some View {
         NavigationStack {
             List {
-                ForEach(tasks) { task in
+                ForEach(inboxTasks) { task in
                     TaskRowView(task: task)
                 }
                 .onDelete(perform: delete)
@@ -36,7 +39,7 @@ struct TaskListInboxView: View {
 
     private func delete(at offsets: IndexSet) {
         for index in offsets {
-            context.delete(tasks[index])
+            context.delete(inboxTasks[index])
         }
     }
 }

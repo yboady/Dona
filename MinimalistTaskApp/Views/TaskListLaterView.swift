@@ -3,19 +3,22 @@ import SwiftData
 
 struct TaskListLaterView: View {
     @Environment(\.modelContext) private var context
-    @Query private var tasks: [Task]
+
+    // ⬇️ récupère toutes les tâches, non filtrées
+    @Query(sort: [SortDescriptor(\Task.createdAt, order: .reverse)])
+    private var allTasks: [Task]
+
     @State private var showingNew = false
 
-    init() {
-        _tasks = Query(filter: #Predicate<Task> { task in
-            task.category == TaskCategory.later
-        }, sort: [SortDescriptor(\Task.createdAt, order: .reverse)])
+    /// Filtrage en mémoire : seulement les tâches .later
+    private var laterTasks: [Task] {
+        allTasks.filter { $0.category == .later }
     }
 
     var body: some View {
         NavigationStack {
             List {
-                ForEach(tasks) { task in
+                ForEach(laterTasks) { task in
                     TaskRowView(task: task)
                 }
                 .onDelete(perform: delete)
@@ -36,7 +39,7 @@ struct TaskListLaterView: View {
 
     private func delete(at offsets: IndexSet) {
         for index in offsets {
-            context.delete(tasks[index])
+            context.delete(laterTasks[index])
         }
     }
 }
