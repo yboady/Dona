@@ -11,6 +11,7 @@ struct TaskListPlanView: View {
     private var datedTasks: [Task]
 
     @State private var showingNew = false
+    @State private var editingTask: Task?
 
     /// Tâches .planned datées strictement après aujourd’hui
     private var futurePlanned: [Task] {
@@ -39,6 +40,8 @@ struct TaskListPlanView: View {
                     Section(header: Text(group.date, style: .date)) {
                         ForEach(group.tasks) { task in
                             TaskRowView(task: task)
+                                .contentShape(Rectangle())
+                                .onTapGesture { editingTask = task }
                         }
                         .onDelete { offsets in
                             delete(offsets, in: group.tasks)
@@ -55,7 +58,10 @@ struct TaskListPlanView: View {
                 }
             }
             .sheet(isPresented: $showingNew) {
-                NewTaskSheet(defaultSelection: .plan)
+                TaskSheet(task: nil)
+            }
+            .sheet(item: $editingTask) { task in
+                TaskSheet(task: task)
             }
         }
     }

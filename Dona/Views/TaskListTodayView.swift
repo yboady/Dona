@@ -8,6 +8,7 @@ struct TaskListTodayView: View {
     private var allTasks: [Task]
 
     @State private var showingNew = false
+    @State private var editingTask: Task?
 
     /// Tâches .planned dont la date est « aujourd’hui »
     private var todayTasks: [Task] {
@@ -23,6 +24,8 @@ struct TaskListTodayView: View {
             List {
                 ForEach(todayTasks) { task in
                     TaskRowView(task: task)
+                        .contentShape(Rectangle())
+                        .onTapGesture { editingTask = task }
                 }
                 .onDelete(perform: delete)
             }
@@ -35,7 +38,10 @@ struct TaskListTodayView: View {
                 }
             }
             .sheet(isPresented: $showingNew) {
-                NewTaskSheet(defaultSelection: .today)
+                TaskSheet(task: nil)
+            }
+            .sheet(item: $editingTask) { task in
+                TaskSheet(task: task)
             }
         }
     }
