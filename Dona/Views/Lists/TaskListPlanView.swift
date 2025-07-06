@@ -32,6 +32,10 @@ struct TaskListPlanView: View {
         }
         return dict.keys.sorted().map { (date: $0, tasks: dict[$0] ?? []) }
     }
+    
+    private var totalPlanned: Int {
+        futurePlanned.count
+    }
 
     var body: some View {
         NavigationStack {
@@ -48,13 +52,51 @@ struct TaskListPlanView: View {
                         }
                     }
                 }
-            }
-            .navigationTitle("Plan")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button { showingNew.toggle() } label: {
-                        Image(systemName: "plus")
+                
+                // Félicitations si aucune tâche à faire
+                if totalPlanned == 0 {
+                    Section {
+                        VStack(spacing: 12) {
+                            ZStack {
+                            // Fill background at light opacity
+                            Image(systemName: "calendar")
+                                .font(.system(size: 50))
+                                .foregroundColor(CategoryColor.plan)
+                            }
+                            Text("No planned tasks for now, enjoy the hollidays ! 😉")
+                                .font(.headline)
+                                .multilineTextAlignment(.center)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
                     }
+                }
+            }
+            .padding(.top, 16)
+            .padding(.bottom, 140)
+            .navigationTitle("Plan")
+            .navigationBarTitleDisplayMode(.inline)
+            // Effet glass permanent
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    HStack(spacing: 10) {
+                        Text("Plan")
+                            .font(.title3)
+                            .bold()
+                        Text("\(totalPlanned)")
+                            .font(.subheadline)
+                            .bold()
+                            .foregroundColor(Color.white)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(CategoryColor.plan)
+                            )
+                    }
+                    .frame(maxWidth: .infinity, alignment: .center)
                 }
             }
             .sheet(isPresented: $showingNew) {
